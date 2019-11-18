@@ -11,13 +11,14 @@ type GSConnectorData {
 }
 
 type GSSheet struct {
-
+	sheet []GSRow
 }
 
 type GSRow struct {
-
+	row []GSCell
 }
 
-type GCCell struct {
-
+type GSCell struct {
+	dataType string //data type before string conversion
+	cell string
 }

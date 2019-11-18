@@ -5,11 +5,12 @@ package gsconnector
 import (
 	"encoding/json"
 	"fmt"
-	"lib"
+	"D2GrailOBS/lib"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"D2GrailOBS/types"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -73,7 +74,9 @@ func saveToken(path string, token *oauth2.Token) {
 }
 
 //GoogleSheetsConnector returns an array of data based on the sheet, tab, and range provided.  Use 0 for endRow to return all rows
-func GoogleSheetsConnector(sheetURL string, tabName string, startColumn int, startRow int, endColumn int, endRow int, b []byte) [][]string {
+func GSReader(gscdata types.GSConnectorData)
+	sheetURL string, tabName string, startColumn int, startRow int, endColumn int, endRow int, b []byte
+	) [][]string {
 	//fmt.Println(binary.Size(b))
 	startSubstr := "/spreadsheets/d/"
 	endSubstr := "/edit"
@@ -85,6 +88,8 @@ func GoogleSheetsConnector(sheetURL string, tabName string, startColumn int, sta
 		readRange = readRange + string(endRow)
 	}
 	fmt.Println(readRange)
+
+	_ := types.GSSheet{}
 
 	// If modifying these scopes, delete your previously saved token.json.
 	config, err := google.ConfigFromJSON(b, "https://www.googleapis.com/auth/spreadsheets.readonly")
