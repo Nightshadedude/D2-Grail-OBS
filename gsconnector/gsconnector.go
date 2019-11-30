@@ -3,14 +3,15 @@ package gsconnector
 //this is the intermediary between Google Sheets and the app.
 
 import (
+	lib "D2GrailOBS/gsconnector/gsclib"
+	"D2GrailOBS/types"
 	"encoding/json"
 	"fmt"
-	"D2GrailOBS/lib"
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
-	"D2GrailOBS/types"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -73,26 +74,23 @@ func saveToken(path string, token *oauth2.Token) {
 	json.NewEncoder(f).Encode(token)
 }
 
-//GoogleSheetsConnector returns an array of data based on the sheet, tab, and range provided.  Use 0 for endRow to return all rows
-func GSReader(gscdata types.GSConnectorData)
-	sheetURL string, tabName string, startColumn int, startRow int, endColumn int, endRow int, b []byte
-	) [][]string {
+//GSReader returns an array of data based on the sheet, tab, and range provided.  Use 0 for endRow to return all rows
+func GSReader(gscdata types.GSCRead) types.GSSheet {
 	//fmt.Println(binary.Size(b))
 	startSubstr := "/spreadsheets/d/"
 	endSubstr := "/edit"
-	spreadsheetID := lib.GetStringBetween(sheetURL, startSubstr, endSubstr)
-	readRange := tabName + "!"
-	readRange = readRange + lib.IntToCharStrArr(startColumn) + strconv.Itoa(startRow)
-	readRange = readRange + ":" + lib.IntToCharStrArr(endColumn)
-	if endRow != 0 {
-		readRange = readRange + string(endRow)
+	spreadsheetID := lib.GetStringBetween(gscdata.SheetURL, startSubstr, endSubstr)
+	readRange := gscdata.TabName + "!"
+	readRange = readRange + lib.IntToCharStrArr(gscdata.StartColumn) + strconv.Itoa(gscdata.StartRow)
+	readRange = readRange + ":" + lib.IntToCharStrArr(gscdata.EndColumn)
+	if gscdata.EndRow != 0 {
+		readRange = readRange + string(gscdata.EndRow)
 	}
+
 	fmt.Println(readRange)
 
-	_ := types.GSSheet{}
-
 	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b, "https://www.googleapis.com/auth/spreadsheets.readonly")
+	config, err := google.ConfigFromJSON(gscdata.B, "https://www.googleapis.com/auth/spreadsheets.readonly")
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
@@ -108,30 +106,72 @@ func GSReader(gscdata types.GSConnectorData)
 		log.Fatalf("Unable to retrieve data from sheet: %v", err)
 	}
 
-	var stringData2D [][]string
+	var readSheet types.GSSheet
 	if len(resp.Values) == 0 {
 		log.Println("No data found.")
-		return stringData2D
+		return readSheet
 	} else {
-
 		for _, row := range resp.Values {
-			var stringData1D []string
+			var readRow types.GSRow
 			for _, cellVal := range row {
-				tempCellVal := "<null>"
+				var readCell types.GSCell
 				if str, ok := cellVal.(string); ok {
-					tempCellVal = str
+					readCell.DataType = reflect.TypeOf(cellVal)
+					readCell.Cell = str
 				} else {
 					/* not string .. do nothing */
 				}
-				stringData1D = append(stringData1D, tempCellVal)
+				readRow.Row = append(readRow.Row, readCell)
 			}
-			stringData2D = append(stringData2D, stringData1D)
+			readSheet.Sheet = append(readSheet.Sheet, readRow)
 		}
 
-		return stringData2D
+		return readSheet
 		//fmt.Println("Name, Major:")
 		//for _, row := range resp.Values {
 		// Print columns A to D, which correspond to indices 0 to 3.
 		//	fmt.Printf("%s\n", row[0:4])
+	}
+}
+
+//GSWriter takes a sheet struct and writes it into the sheet. Returns true on success and false on failure.
+func GSWriter(gscdata types.GSCWrite) bool {
+	//fmt.Println(binary.Size(b))
+	startSubstr := "/spreadsheets/d/"
+	endSubstr := "/edit"
+	spreadsheetID := lib.GetStringBetween(gscdata.SheetURL, startSubstr, endSubstr)
+	dataRowCount, dataColumnCount := lib.CalcRangeBasedOnSheet(gscdata.WriteSheet)
+
+	writeRange := gscdata.TabName + "!"
+	writeRange = writeRange + lib.IntToCharStrArr(gscdata.StartColumn) + strconv.Itoa(gscdata.StartRow)
+	writeRange = writeRange + ":" + lib.IntToCharStrArr(gscdata.StartColumn+dataColumnCount) + strconv.Itoa(gscdata.StartRow+dataRowCount)
+	fmt.Println(writeRange)
+
+	// If modifying these scopes, delete your previously saved token.json.
+	config, err := google.ConfigFromJSON(gscdata.B, "https://www.googleapis.com/auth/spreadsheets")
+	if err != nil {
+		log.Fatalf("Unable to parse client secret file to config: %v", err)
+	}
+	client := getClient(config)
+
+	srv, err := sheets.New(client)
+	if err != nil {
+		log.Fatalf("Unable to retrieve Sheets client: %v", err)
+	}
+
+	var interfacedStringArr types.SheetInterface
+	interfacedStringArr = gscdata.WriteSheet
+
+	requestBody := &sheets.ValueRange{}
+	requestBody.Range = writeRange
+	requestBody.MajorDimension = "ROWS"
+	requestBody.Values = interfacedStringArr
+
+	resp, err := srv.Spreadsheets.Values.Update(spreadsheetID, writeRange, requestBody)
+		.ValueInputOption(gscdata.ValueOption)
+		//.Context(ctx)
+		.Do()
+	if err != nil {
+		log.Fatalf("Unable to retrieve data from sheet: %v", err)
 	}
 }

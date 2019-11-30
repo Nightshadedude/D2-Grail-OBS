@@ -1,6 +1,9 @@
-package lib
+package gsclib
 
-import "strings"
+import (
+	"D2GrailOBS/types"
+	"strings"
+)
 
 //GetStringBetween Returns empty string if no start string found
 func GetStringBetween(str string, start string, end string) (result string) {
@@ -13,7 +16,7 @@ func GetStringBetween(str string, start string, end string) (result string) {
 	return str[s:e]
 }
 
-//IntToCharStrArr Returns A
+//IntToCharStrArr Returns a character representation of a numeric input
 func IntToCharStrArr(i int) string {
 	var arr = [...]string{".", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
 		"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "AA", "AB", "AC", "AD",
@@ -68,4 +71,15 @@ func IntToCharStrArr(i int) string {
 	}
 
 	return arr[i]
+}
+
+// CalcRangeBasedOnSheet takes a sheet structure and returns the number of rows and columns
+func CalcRangeBasedOnSheet(sheet types.GSSheet) (int, int) {
+	var rowCount = 0
+	var columnCount = 0
+
+	rowCount = len(sheet.Sheet)
+	columnCount = len(sheet.Sheet[0].Row)
+
+	return rowCount, columnCount
 }
