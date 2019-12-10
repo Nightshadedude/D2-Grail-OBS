@@ -1,7 +1,7 @@
 package gsclib
 
 import (
-	"D2GrailOBS/types"
+	"D2-Grail-OBS/types"
 	"strings"
 )
 

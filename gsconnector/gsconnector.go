@@ -3,8 +3,8 @@ package gsconnector
 //this is the intermediary between Google Sheets and the app.
 
 import (
-	lib "D2GrailOBS/gsconnector/gsclib"
-	"D2GrailOBS/types"
+	lib "D2-Grail-OBS/gsconnector/gsclib"
+	"D2-Grail-OBS/types"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -90,7 +90,7 @@ func GSReader(gscdata types.GSCRead) types.GSSheet {
 	fmt.Println(readRange)
 
 	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(gscdata.B, "https://www.googleapis.com/auth/spreadsheets.readonly")
+	config, err := google.ConfigFromJSON(gscdata.B, "https://www.googleapis.com/auth/spreadsheets")
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
@@ -159,19 +159,56 @@ func GSWriter(gscdata types.GSCWrite) bool {
 		log.Fatalf("Unable to retrieve Sheets client: %v", err)
 	}
 
-	var interfacedStringArr types.SheetInterface
-	interfacedStringArr = gscdata.WriteSheet
+	//	var interfacedStringArr types.SheetInterface
+	//	interfacedStringArr = gscdata.WriteSheet
 
 	requestBody := &sheets.ValueRange{}
 	requestBody.Range = writeRange
 	requestBody.MajorDimension = "ROWS"
-	requestBody.Values = interfacedStringArr
+	requestBody.Values = gscdata.WriteSheet.Sheet2D()
 
-	resp, err := srv.Spreadsheets.Values.Update(spreadsheetID, writeRange, requestBody)
-		.ValueInputOption(gscdata.ValueOption)
-		//.Context(ctx)
-		.Do()
+	resp, err := srv.Spreadsheets.Values.Update(spreadsheetID, writeRange, requestBody).ValueInputOption(gscdata.ValueOption).Do()
+	//.Context(ctx).Do()
 	if err != nil {
-		log.Fatalf("Unable to retrieve data from sheet: %v", err)
+		log.Fatalf("Unable to write data to sheet: %v", err)
+		return false
 	}
+	log.Printf("Write Response: %v", resp)
+	return true
+}
+
+//GSDeleter takes a sheet struct and writes it into the sheet. Returns true on success and false on failure.
+func GSDeleter(gscdata types.GSCDelete) bool {
+	//fmt.Println(binary.Size(b))
+	startSubstr := "/spreadsheets/d/"
+	endSubstr := "/edit"
+	spreadsheetID := lib.GetStringBetween(gscdata.SheetURL, startSubstr, endSubstr)
+
+	deleteRange := gscdata.TabName + "!"
+	deleteRange = deleteRange + lib.IntToCharStrArr(gscdata.StartColumn) + strconv.Itoa(gscdata.StartRow)
+	deleteRange = deleteRange + ":" + lib.IntToCharStrArr(gscdata.EndColumn) + strconv.Itoa(gscdata.EndRow)
+	fmt.Println(deleteRange)
+
+	// If modifying these scopes, delete your previously saved token.json.
+	config, err := google.ConfigFromJSON(gscdata.B, "https://www.googleapis.com/auth/spreadsheets")
+	if err != nil {
+		log.Fatalf("Unable to parse client secret file to config: %v", err)
+	}
+	client := getClient(config)
+
+	srv, err := sheets.New(client)
+	if err != nil {
+		log.Fatalf("Unable to retrieve Sheets client: %v", err)
+	}
+
+	requestBody := &sheets.ClearValuesRequest{} // requestBody is empty for delete/clear call
+
+	resp, err := srv.Spreadsheets.Values.Clear(spreadsheetID, deleteRange, requestBody).Do()
+	//.Context(ctx).Do()
+	if err != nil {
+		log.Fatalf("Unable to write data to sheet: %v", err)
+		return false
+	}
+	log.Printf("Delete Response: %v", resp)
+	return true
 }
