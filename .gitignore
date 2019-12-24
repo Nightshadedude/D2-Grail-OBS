@@ -3,3 +3,9 @@ d2GrailOBS.env
 
 //credential file for google sheets
 cred.json
+
+//credential token file
+token.json
+
+//executable
+main
