@@ -85,79 +85,77 @@ type Room2 struct {
 	_7 [0x88]BYTE
 	Other *Room2 // 0xE8
 }
-///up to here
-// updated
-struct room1
-{
-  room1 **room1s_near; // 0x00
-  DWORD _1[3];
-  room2 *room2; // 0x10
-  DWORD _2[3];
-  vaddr coll_map; // 0x20
-  DWORD n_rooms_near; // 0x24
-  DWORD _3;
-  act *act; // 0x2C
-  BYTE _4[0x1C];
-  DWORD base_x; // 0x4C
-  DWORD base_y; // 0x50
-  DWORD size_x; // 0x54
-  DWORD size_y; // 0x58
-  DWORD r_x; // 0x5C
-  DWORD r_y; // 0x60
-  DWORD r_size_x; // 0x64
-  DWORD r_size_y; // 0x68
-  DWORD seed[2]; // 0x6C
-  unit_any *unit_first; // 0x74
-  DWORD _5;
-  room1 *next; // 0x7C
-};
 
-// updated
-struct act_misc
-{
-  BYTE _1[0x94];
-  DWORD staff_tomb_level; // 0x94
-  BYTE _2[0x3D4];
-  act *act; // 0x46C
-  DWORD _3[3];
-  level *level_first; // 0x47C
-};
+// Room1 - updated
+type Room1 struct {
+  Room1s_near **Room1 // 0x00
+  _1 [3]DWORD
+  Room2 *Room2 // 0x10
+  _2 [3]DWORD
+  Coll_map VADDR  // 0x20
+  N_rooms_near DWORD // 0x24
+  _3 DWORD
+  Act *Act // 0x2C
+  _4 [0x1C]BYTE
+  Base_x DWORD // 0x4C
+  Base_y DWORD // 0x50
+  Size_x DWORD // 0x54
+  Size_y DWORD // 0x58
+  R_x DWORD // 0x5C
+  R_y DWORD // 0x60
+  R_size_x DWORD // 0x64
+  R_size_y DWORD // 0x68
+  Seed [2]DWORD // 0x6C
+  Unit_first *Unit_any // 0x74
+  _5 DWORD
+  Next *Room1; // 0x7C
+}
 
-// updated
-struct act
-{
-  DWORD _1[4];
-  room1 *room1; // 0x10
-  DWORD act_no; // 0x14
-  DWORD _2[12];
-  act_misc *misc; // 0x48
-};
+// Act_misc - updated
+type Act_misc struct {
+  _1 [0x94]BYTE
+  Staff_tomb_level DWORD // 0x94
+  _2 [0x3D4]BYTE
+  Act *Act // 0x46C
+  _3 [3]DWORD
+  Level_first *Level // 0x47C
+}
 
-struct unit_any
-{
-  DWORD type;
-  DWORD txtfile_no;
-  DWORD _1;
-  DWORD id;
-  DWORD mode;
-  union
-  {
-    monster_data *monster_data;
-    player_data *player_data;
-    item_data *item_data;
-    vaddr object_data;
-  };
-  DWORD act_no;
-  act *act;
-  DWORD seed[2];
-  DWORD _2;
-  union
-  {
-    path *path;
-    vaddr item_path;
-    vaddr object_path;
-  };
-  DWORD _3[5];
+// Act - updated
+type Act struct {
+  _1 [4]DWORD 
+  Room1 *Room1 // 0x10
+  Act_no DWORD // 0x14
+  _2 [12]DWORD
+  Misc *Act_misc // 0x48
+}
+
+//Unit_any - port
+type Unit_any struct {
+  Type DWORD
+  Txtfile_no DWORD
+  _1 DWORD
+  Id DWORD
+  Mode DWORD
+  //union
+  Monster_data *Monster_data
+  Player_data *Player_data
+  Item_data *Item_data
+  Object_data VADDR
+  //end union
+  Act_no DWORD 
+  Act *Act;
+  Seed [2]DWORD
+  _2 DWORD
+  //union
+  Path *Path;
+  Item_path VADDR 
+  Object_path VADDR
+  //end union
+  _3 [5]DWORD
+
+  //HERE
+  
   DWORD gfx_frame;
   DWORD frame_remain;
   WORD frame_rate;
@@ -165,9 +163,9 @@ struct unit_any
   BYTE *gfx_unk;
   DWORD *gfx_info;
   DWORD _5;
-  vaddr stats;
-  vaddr inventory;
-  vaddr light;
+  VADDR stats;
+  VADDR inventory;
+  VADDR light;
   DWORD _6[9];
   WORD x;
   WORD y;
@@ -175,8 +173,8 @@ struct unit_any
   DWORD owner_type;
   DWORD owner_id;
   DWORD _8[2];
-  vaddr oh_msg;
-  vaddr info;
+  VADDR oh_msg;
+  VADDR info;
   DWORD _9[6];
   DWORD flags;
   DWORD flags_2;
@@ -304,7 +302,7 @@ struct item_data
   BYTE _7;
   WORD _8;
   DWORD _9[4];
-  vaddr owner_inventory;
+  VADDR owner_inventory;
   DWORD _10;
   unit_any *inv_next;
   BYTE _11;
@@ -334,12 +332,12 @@ struct game_info
 struct player_data
 {
   char name[0x10];
-  vaddr quest_normal;
-  vaddr quest_nightmare;
-  vaddr quest_hell;
-  vaddr waypoint_normal;
-  vaddr waypoint_nightmare;
-  vaddr waypoint_hell;
+  VADDR quest_normal;
+  VADDR quest_nightmare;
+  VADDR quest_hell;
+  VADDR waypoint_normal;
+  VADDR waypoint_nightmare;
+  VADDR waypoint_hell;
 };
 
 #elif defined _VERSION_1_12
@@ -394,7 +392,7 @@ struct room2
     DWORD y;
     DWORD size_x;
     DWORD size_y;
-    vaddr type2info;
+    VADDR type2info;
     DWORD _4[0x20];
     DWORD preset_type;
     preset_unit *preset;
@@ -419,7 +417,7 @@ struct room1
     DWORD _4;
     unit_any *unit_first;
     DWORD _5[3];
-    vaddr coll_map;
+    VADDR coll_map;
     DWORD _6[0x7];
     room2 *room2;
     DWORD _7;
@@ -457,7 +455,7 @@ struct unit_any
         monster_data *monster_data;
         player_data *player_data;
         item_data *item_data;
-        vaddr object_data;
+        VADDR object_data;
       };
     DWORD act_no;
     act *act;
@@ -466,8 +464,8 @@ struct unit_any
     union
       {
         path *path;
-        vaddr item_path;
-        vaddr object_path;
+        VADDR item_path;
+        VADDR object_path;
       };
     DWORD _3[5];
     DWORD gfx_frame;
@@ -477,9 +475,9 @@ struct unit_any
     BYTE *gfx_unk;
     DWORD *gfx_info;
     DWORD _5;
-    vaddr stats;
-    vaddr inventory;
-    vaddr light;
+    VADDR stats;
+    VADDR inventory;
+    VADDR light;
     DWORD _6[9];
     WORD x;
     WORD y;
@@ -487,8 +485,8 @@ struct unit_any
     DWORD owner_type;
     DWORD owner_id;
     DWORD _8[2];
-    vaddr oh_msg;
-    vaddr info;
+    VADDR oh_msg;
+    VADDR info;
     DWORD _9[6];
     DWORD flags;
     DWORD flags_2;
@@ -597,12 +595,12 @@ struct monster_data
 struct player_data
   {
     char name[0x10];
-    vaddr quest_normal;
-    vaddr quest_nightmare;
-    vaddr quest_hell;
-    vaddr waypoint_normal;
-    vaddr waypoint_nightmare;
-    vaddr waypoint_hell;
+    VADDR quest_normal;
+    VADDR quest_nightmare;
+    VADDR quest_hell;
+    VADDR waypoint_normal;
+    VADDR waypoint_nightmare;
+    VADDR waypoint_hell;
   };
 
 struct item_data
@@ -625,7 +623,7 @@ struct item_data
     BYTE _7;
     WORD _8;
     DWORD _9[4];
-    vaddr owner_inventory;
+    VADDR owner_inventory;
     DWORD _10;
     unit_any *inv_next;
     BYTE _11;
