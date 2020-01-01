@@ -153,46 +153,47 @@ type Unit_any struct {
   Object_path VADDR
   //end union
   _3 [5]DWORD
+  Gfx_frame DWORD
+  Frame_remain DWORD
+  Frame_rate WORD
+  _4 WORD
+  Gfx_unk *BYTE
+  Gfx_info *DWORD
+  _5 DWORD
+  Stats VADDR
+  Inventory VADDR
+  Light VADDR 
+  _6 [9]DWORD 
+  X WORD 
+  Y WORD
+  _7 DWORD
+  Owner_type DWORD
+  Owner_id DWORD
+  _8 [2]DWORD
+  Oh_msg VADDR
+  Info VADDR
+  _9 [6]DWORD
+  Flags DWORD
+  Flags_2 DWORD
+  _10 [5]DWORD
+  Changed_next *Unit_any
+  Room_next *Unit_any
+  List_next *Unit_any
+}
+
+//Path - Port
+type Path struct {
+  Offset_x WORD
+  X WORD
+  Offset_y WORD
+  Y WORD
+  _1 [2]DWORD
+  Target_x WORD
+  Target_y WORD
 
   //HERE
-  
-  DWORD gfx_frame;
-  DWORD frame_remain;
-  WORD frame_rate;
-  WORD _4;
-  BYTE *gfx_unk;
-  DWORD *gfx_info;
-  DWORD _5;
-  VADDR stats;
-  VADDR inventory;
-  VADDR light;
-  DWORD _6[9];
-  WORD x;
-  WORD y;
-  DWORD _7;
-  DWORD owner_type;
-  DWORD owner_id;
-  DWORD _8[2];
-  VADDR oh_msg;
-  VADDR info;
-  DWORD _9[6];
-  DWORD flags;
-  DWORD flags_2;
-  DWORD _10[5];
-  unit_any *changed_next;
-  unit_any *room_next;
-  unit_any *list_next;
-};
 
-struct path
-{
-  WORD offset_x;
-  WORD x;
-  WORD offset_y;
-  WORD y;
-  DWORD _1[2];
-  WORD target_x;
-  WORD target_y;
+  
   DWORD _2[2];
   room1 *room1;
   room1 *room_unk;
