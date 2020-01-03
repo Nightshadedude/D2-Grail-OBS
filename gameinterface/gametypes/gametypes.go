@@ -190,39 +190,36 @@ type Path struct {
   _1 [2]DWORD
   Target_x WORD
   Target_y WORD
+  _2 [2]DWORD
+  Room1 *Room1
+  Room_unk *Room1
+  _3 [3]DWORD
+  Unit *Unit_any
+  Flags DWORD
+  _4 DWORD
+  Type DWORD 
+  Prev_type DWORD 
+  Unit_size DWORD 
+  _5 [4]DWORD 
+  Target_unit *Unit_any
+  Target_type DWORD
+  Target_id DWORD 
+  Direction BYTE 
+}
 
-  //HERE
+// Preset_unit - updated
+type Preset_unit struct {
+  _1 DWORD 
+  Txt_file_no DWORD  // 0x04
+  X DWORD // 0x08
+  Next *Preset_unit // 0x0C
+  _2 DWORD 
+  Type DWORD // 0x14
+  Y DWORD // 0x18
+}
 
-  
-  DWORD _2[2];
-  room1 *room1;
-  room1 *room_unk;
-  DWORD _3[3];
-  unit_any *unit;
-  DWORD flags;
-  DWORD _4;
-  DWORD type;
-  DWORD prev_type;
-  DWORD unit_size;
-  DWORD _5[4];
-  unit_any *target_unit;
-  DWORD target_type;
-  DWORD target_id;
-  BYTE direction;
-};
 
-// updated
-struct preset_unit
-{
-  DWORD _1;
-  DWORD txt_file_no; // 0x04
-  DWORD x; // 0x08
-  preset_unit *next; // 0x0C
-  DWORD _2;
-  DWORD type; // 0x14
-  DWORD y; // 0x18
-};
-
+// HERE
 // updated
 struct room_tile
 {
@@ -518,9 +515,9 @@ struct path
     DWORD unit_size;
     DWORD _5[4];
     unit_any *target_unit;
-    DWORD target_type;
-    DWORD target_id;
-    BYTE direction;
+    DWORD Target_type;
+    DWORD Target_id;
+    BYTE Direction;
   };
 
 struct Automap_cell
