@@ -1,6 +1,11 @@
 //Blank environment file
-//Actual file will be identical but named d2GrailOBS.env and will contain all necessary environment variables.
+//Actual file will be identical but named d2_grail_obs.env and will contain all necessary environment variables.
 
+//name of the creditials JSON
 CREDENTIALS_FILE_NAME=
+
+//URL of the Google Sheet that is being connected to
 GOOGLE_SHEET_URL=
-TAB_NAME=
+
+//This is a TODO list...
+TAB_NAME_TEST=
