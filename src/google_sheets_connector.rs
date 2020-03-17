@@ -95,6 +95,7 @@ pub fn get_gsc_write(gsc_connection: GoogleSheetsConnection,
 	write_data: Vec<Vec<String>>,
 	value_option: String) -> GoogleSheetsWrite {
 
+        let range = to_a1_notation(tab: &str, start_column: Option<i32>, start_row: Option<i32>, end_column: Option<i32>, end_row: Option<i32>);
 		let mut range = &mut gsc_connection.tab_name;
 		range.push_str("!");
 		write_range.push_str(&int_to_char_string(write_data.start_column));
