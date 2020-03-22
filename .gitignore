@@ -1,5 +1,5 @@
-//Environment Variables which contain keys
-d2GrailOBS.env
+//Environment Variables which may contain keys
+d2-grail-obs.env
 
 //credential file for google sheets
 cred.json
