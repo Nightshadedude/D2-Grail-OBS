@@ -14,9 +14,9 @@ use google_sheets4::Sheets;
 pub use yup_oauth2::{FlowType,
     ApplicationSecret,
     read_application_secret};
-pub use yup_oauth2::authenticator::Authenticator
-pub use yup_oauth2::authenticator_delegate::DefaultAuthenticatorDelegate
-pub use yup_oauth2::storage::DiskTokenStorage
+use yup_oauth2::Authenticator;
+use yup_oauth2::DefaultAuthenticatorDelegate;
+use yup_oauth2::DiskTokenStorage;
 
 use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
@@ -34,6 +34,27 @@ impl ValueOption {
         }
     }
 }
+
+fn get_hub(conn: GoogleSheetsConnection) -> sheets4::Sheets<hyper::client::Client,yup_oauth2::Authenticator<yup_oauth2::DefaultAuthenticatorDelegate, yup_oauth2::DiskTokenStorage, hyper::client::Client>> {
+	let sheet_id = conn.sheet_id;
+    let secret = read_client_secret(conn.credentials_file.unwrap());
+	let client = hyper::Client::with_connector(
+        HttpsConnector::new(NativeTlsClient::new().unwrap()));
+	
+	let authenticator = Authenticator::new(&secret,
+		DefaultAuthenticatorDelegate,
+		client,
+		DiskTokenStorage::new(&"token_store.json".to_string())
+			.unwrap(),
+		Some(FlowType::InstalledInteractive));
+
+	let client = hyper::Client::with_connector(
+		HttpsConnector::new(NativeTlsClient::new().unwrap()));
+	
+	//return the authenticated "hub"
+	Sheets::new(client, authenticator)
+}
+
 
 
 //////////GOOGLE SHEETS STRUCTS AND METHODS //////////
@@ -82,27 +103,6 @@ fn read_client_secret(file: String) -> ApplicationSecret {
     read_application_secret(Path::new(&file)).unwrap()
 }
 
-fn get_hub(conn: GoogleSheetsConnection) -> sheets4::Sheets<hyper::client::Client,yup_oauth2::authenticator::Authenticator<yup_oauth2::authenticator_delegate::DefaultAuthenticatorDelegate, yup_oauth2::storage::DiskTokenStorage, hyper::client::Client>> {
-	let sheet_id = conn.sheet_id;
-    let secret = read_client_secret(conn.credentials_file);
-	let client = hyper::Client::with_connector(
-        HttpsConnector::new(NativeTlsClient::new().unwrap()));
-	
-	let authenticator = Authenticator::new(&secret,
-		DefaultAuthenticatorDelegate,
-		client,
-		DiskTokenStorage::new(&"token_store.json".to_string())
-			.unwrap(),
-		Some(FlowType::InstalledInteractive));
-
-	let client = hyper::Client::with_connector(
-		HttpsConnector::new(NativeTlsClient::new().unwrap()));
-	
-	//return the authenticated "hub"
-	Sheets::new(client, authenticator)
-}
-
-
 
 //google_sheets4::Sheets<hyper::client::Client,yup_oauth2::authenticator::Authenticator<yup_oauth2::authenticator_delegate::DefaultAuthenticatorDelegate, yup_oauth2::storage::DiskTokenStorage, hyper::client::Client>>
 
@@ -124,7 +124,7 @@ pub fn get_connection(tab:&str) -> GoogleSheetsConnection {
         },
         tab_name: match tab.len(){
             0 => None,
-            _ => Some(tab),
+            _ => Some(String::from(tab)),
         },
         credentials_file: match client_secret_file.len(){
             0 => None,
@@ -164,26 +164,12 @@ pub fn get_read(conn: GoogleSheetsConnection,
         }
 }
 
-pub fn get_gsc_write(gsc_connection: GoogleSheetsConnection,
+pub fn get_write(gsc_connection: GoogleSheetsConnection,
 	start_column: i32,
 	start_row: i32,
 	write_data: Vec<Vec<String>>,
-	value_option: String) -> GoogleSheetsWrite {
+	value_option: Option<ValueOption>) -> GoogleSheetsWrite {
 
-        let range = to_a1_notation(tab: &str, start_column: Option<i32>, start_row: Option<i32>, end_column: Option<i32>, end_row: Option<i32>);
-		let mut range = &mut gsc_connection.tab_name;
-		range.push_str("!");
-		write_range.push_str(&int_to_char_string(write_data.start_column));
-		let start_row = write_data.start_row.to_string();
-		write_range.push_str(&start_row);
-		write_range.push_str(":");
-		let count = calc_range_from_vec_vec(&write_data.write_data.clone().unwrap());
-		let end_col = (write_data.start_column + count.1).to_string();
-		write_range.push_str(&end_col);
-		let end_row = (write_data.start_row + count.0).to_string();
-		write_range.push_str(&end_row);
-		println!("Write Range: {}", write_range);
-		//println!("Write Data: {:#?}", &write_data.write_data);
 
 		let val_range = sheets4::ValueRange{
 			range: Option<String>,
@@ -194,7 +180,7 @@ pub fn get_gsc_write(gsc_connection: GoogleSheetsConnection,
 		GoogleSheetsWrite{
 			connection: gsc_connection,
 			write_data: val_range,
-			value_option: value_option
+			value_option: value_option,
 		}
 
 }
