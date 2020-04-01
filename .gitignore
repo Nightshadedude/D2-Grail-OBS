@@ -5,7 +5,8 @@ d2-grail-obs.env
 cred.json
 
 //credential token file
-token.json
+token_store.json
+token*.json
 
 //executable
 main

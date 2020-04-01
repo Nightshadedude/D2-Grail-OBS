@@ -2,48 +2,77 @@
 
 extern crate hyper;
 extern crate hyper_native_tls;
-extern crate yup_oauth2;
+pub extern crate yup_oauth2;
 extern crate google_sheets4 as sheets4;
 extern crate dotenv;
 
 use std::path::Path;
-use std::env;
-use google_sheets4::ValueRange;
-use google_sheets4::{Result, Error};
+//use std::env;
+//use google_sheets4::ValueRange;
+//use google_sheets4::{Result, Error};
 use google_sheets4::Sheets;
-use yup_oauth2::{Authenticator, FlowType, ApplicationSecret, DiskTokenStorage,
-    DefaultAuthenticatorDelegate, read_application_secret};
+pub use yup_oauth2::{FlowType,
+    ApplicationSecret,
+    read_application_secret};
+pub use yup_oauth2::authenticator::Authenticator
+pub use yup_oauth2::authenticator_delegate::DefaultAuthenticatorDelegate
+pub use yup_oauth2::storage::DiskTokenStorage
+
 use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
 
-//////////GOOGLE SHEETS STRUCTS//////////
+enum ValueOption {
+    Raw, //RAW
+    UserEntered, //USER_ENTERED
+}
+
+impl ValueOption {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Raw => String::from("RAW"),
+            Self::UserEntered => String::from("USER_ENTERED"),
+        }
+    }
+}
+
+
+//////////GOOGLE SHEETS STRUCTS AND METHODS //////////
 pub struct GoogleSheetsConnection {
-	sheet_id: String,		//url of google sheet
-	tab_name: String,		//name of tab that is being accessed
-	credentials_file: String	//file that has the connection json
+	sheet_id: Option<String>,		    //url of google sheet
+	tab_name: Option<String>,		    //name of tab that is being accessed
+	credentials_file: Option<String>,	//file that has the connection json
+}
+
+impl GoogleSheetsConnection {
+    fn id_valid(&self) -> bool {
+        match (self.sheet_id, self.tab_name, self.credentials_file) {
+            (Some(_), Some(_), Some(_)) => true,
+            _ => false,
+        }
+    }
 }
 
 pub struct GoogleSheetsRead {
 	connection: GoogleSheetsConnection,	//connection info
-	start_column: i32,	//start data read at this column
-	start_row: i32,		//start data read at this row
-	end_column: i32,		// stop reading data at this column
-	end_row: i32			// stop reading data at this row
+	start_column: Option<i32>,	//start data read at this column
+	start_row: Option<i32>,		//start data read at this row
+	end_column: Option<i32>,		// stop reading data at this column
+	end_row: Option<i32>,		// stop reading data at this row
 }
 
 pub struct GoogleSheetsWrite {
 	connection: GoogleSheetsConnection,	//connection info
 	write_data: sheets4::ValueRange,	//data that will be written
-	value_option: String  //value option type...RAW or USER_ENTERED - TODO: Change to enum?
+	value_option: Option<ValueOption>,  //value option type...RAW or USER_ENTERED - TODO: Change to enum?
 }
 
 
 pub struct GoogleSheetsDelete {
 	connection: GoogleSheetsConnection,	//connection info
-	start_column: i32,	//start data read at this column
-	start_row: i32,		//start data read at this row
-	end_column: i32,		// stop reading data at this column
-	end_row: i32			// stop reading data at this row
+	start_column: Option<i32>,	//start data read at this column
+	start_row: Option<i32>,		//start data read at this row
+	end_column: Option<i32>,		// stop reading data at this column
+	end_row: Option<i32>,			// stop reading data at this row
 }
 
 
@@ -53,40 +82,86 @@ fn read_client_secret(file: String) -> ApplicationSecret {
     read_application_secret(Path::new(&file)).unwrap()
 }
 
+fn get_hub(conn: GoogleSheetsConnection) -> sheets4::Sheets<hyper::client::Client,yup_oauth2::authenticator::Authenticator<yup_oauth2::authenticator_delegate::DefaultAuthenticatorDelegate, yup_oauth2::storage::DiskTokenStorage, hyper::client::Client>> {
+	let sheet_id = conn.sheet_id;
+    let secret = read_client_secret(conn.credentials_file);
+	let client = hyper::Client::with_connector(
+        HttpsConnector::new(NativeTlsClient::new().unwrap()));
+	
+	let authenticator = Authenticator::new(&secret,
+		DefaultAuthenticatorDelegate,
+		client,
+		DiskTokenStorage::new(&"token_store.json".to_string())
+			.unwrap(),
+		Some(FlowType::InstalledInteractive));
+
+	let client = hyper::Client::with_connector(
+		HttpsConnector::new(NativeTlsClient::new().unwrap()));
+	
+	//return the authenticated "hub"
+	Sheets::new(client, authenticator)
+}
+
+
+
 //google_sheets4::Sheets<hyper::client::Client,yup_oauth2::authenticator::Authenticator<yup_oauth2::authenticator_delegate::DefaultAuthenticatorDelegate, yup_oauth2::storage::DiskTokenStorage, hyper::client::Client>>
 
-pub fn get_gsc_connection(tab:&str) -> GoogleSheetsConnection {
+pub fn get_connection(tab:&str) -> GoogleSheetsConnection {
     dotenv::from_filename("d2_grail_obs.env").ok();
     
     let client_secret_file = dotenv::var("CREDENTIALS_FILE_NAME").unwrap();
     let google_sheet_url = dotenv::var("GOOGLE_SHEET_URL").unwrap();
-    let tab_name_test = dotenv::var("TAB_NAME_TEST").unwrap();
+    //let tab_name_test = dotenv::var("TAB_NAME_TEST").unwrap();
 
     let start_substr = "/spreadsheets/d/";
 	let end_substr = "/edit";
     let spreadsheet_id = get_string_between(&google_sheet_url, start_substr, end_substr);
 
     GoogleSheetsConnection{
-        sheet_id: spreadsheet_id,
-        tab_name: tab.to_string(),
-        credentials_file: client_secret_file
+        sheet_id: match spreadsheet_id.len(){
+            0 => None,
+            _ => Some(spreadsheet_id),
+        },
+        tab_name: match tab.len(){
+            0 => None,
+            _ => Some(tab),
+        },
+        credentials_file: match client_secret_file.len(){
+            0 => None,
+            _ => Some(client_secret_file),
+        },
     }
 
 }
 
-pub fn get_gsc_read(gsc_connection: GoogleSheetsConnection,
+pub fn get_read(conn: GoogleSheetsConnection,
 	start_column: i32,
 	start_row: i32,
 	end_column: i32,
 	end_row: i32) -> GoogleSheetsRead {
 		GoogleSheetsRead{
-			connection: gsc_connection,
-			start_column: start_column,
-			start_row: start_row,
-			end_column: end_column,
-			end_row: end_row
-		}
-
+			connection: conn,
+            start_column: match start_column{
+                 0 => None,
+                _ => Some(start_column),
+            
+            },
+            start_row: match start_row{
+                 0 => None,
+                _ => Some(start_row),
+            
+            },
+            end_column: match end_column{
+                 0 => None,
+                _ => Some(end_column),
+            
+            },
+            end_row: match end_row{ 
+                 0 => None,
+                _ => Some(end_row),
+            
+            },
+        }
 }
 
 pub fn get_gsc_write(gsc_connection: GoogleSheetsConnection,
@@ -467,7 +542,7 @@ pub fn to_a1_notation(tab: &str, start_column: Option<i32>,
 			},
 		_ => {
 				println!("{}", "Failed to parse to A1 Notation, returning empty string");
-				println!("{:#?}", (tab, start_column, start_row, end_column, end_row);sss
+				println!("{:#?}", (tab, start_column, start_row, end_column, end_row));
 				String::from("")
 			}
 	}
