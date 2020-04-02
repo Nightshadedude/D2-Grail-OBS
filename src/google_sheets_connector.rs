@@ -35,28 +35,6 @@ impl ValueOption {
     }
 }
 
-fn get_hub(conn: GoogleSheetsConnection) -> sheets4::Sheets<hyper::client::Client,yup_oauth2::Authenticator<yup_oauth2::DefaultAuthenticatorDelegate, yup_oauth2::DiskTokenStorage, hyper::client::Client>> {
-	let sheet_id = conn.sheet_id;
-    let secret = read_client_secret(conn.credentials_file.unwrap());
-	let client = hyper::Client::with_connector(
-        HttpsConnector::new(NativeTlsClient::new().unwrap()));
-	
-	let authenticator = Authenticator::new(&secret,
-		DefaultAuthenticatorDelegate,
-		client,
-		DiskTokenStorage::new(&"token_store.json".to_string())
-			.unwrap(),
-		Some(FlowType::InstalledInteractive));
-
-	let client = hyper::Client::with_connector(
-		HttpsConnector::new(NativeTlsClient::new().unwrap()));
-	
-	//return the authenticated "hub"
-	Sheets::new(client, authenticator)
-}
-
-
-
 //////////GOOGLE SHEETS STRUCTS AND METHODS //////////
 pub struct GoogleSheetsConnection {
 	sheet_id: Option<String>,		    //url of google sheet
@@ -164,26 +142,107 @@ pub fn get_read(conn: GoogleSheetsConnection,
         }
 }
 
-pub fn get_write(gsc_connection: GoogleSheetsConnection,
+pub fn get_write(conn: GoogleSheetsConnection,
 	start_column: i32,
 	start_row: i32,
 	write_data: Vec<Vec<String>>,
 	value_option: Option<ValueOption>) -> GoogleSheetsWrite {
+    let s_col = match start_column{
+        0 => None,
+        _ => Some(start_column),
+    };
+    
+    let s_row = match start_row{
+        0 => None,
+        _ => Some(start_row),
+    };
+    
+    let (num_row, num_col) = calc_range_from_vec_vec(&write_data);
+
+    let e_col = match start_column+num_col{
+        0 => None,
+        _ => Some(start_column+num_col),
+    };
+
+    let e_row = match start_row+num_row{
+        0 => None,
+        _ => Some(start_row+num_row),
+    };
+    
+    let write_range = to_a1_notation(&conn.tab_name.unwrap(),
+        s_col,
+        s_row,
+        e_col,
+        e_row);
+
+    let val_range = sheets4::ValueRange{
+		range: Some(write_range),
+		values: Some(write_data),
+		major_dimension: Some(String::from("ROWS")),
+	};
 
 
-		let val_range = sheets4::ValueRange{
-			range: Option<String>,
-			values: Option<Vec<Vec<String>>>,
-			major_dimension: Option<String>
-		}
-
-		GoogleSheetsWrite{
-			connection: gsc_connection,
-			write_data: val_range,
-			value_option: value_option,
-		}
-
+    GoogleSheetsWrite{
+        connection: conn,
+        write_data: val_range,
+		value_option: Some(ValueOption::Raw),
+	}
 }
+
+pub fn get_delete(conn: GoogleSheetsConnection,
+                  start_column: i32,
+                  start_row: i32,
+                  end_column: i32,
+                  end_row: i32) -> GoogleSheetsDelete{
+    let s_col = match start_column{
+        0 => None,
+        _ => Some(start_column),
+    };
+    
+    let s_row = match start_row{
+        0 => None,
+        _ => Some(start_row),
+    };
+
+    let e_col = match end_column{
+        0 => None,
+        _ => Some(end_column),
+    };
+
+    let e_row = match end_row{
+        0 => None,
+        _ => Some(end_row),
+    };
+
+    GoogleSheetsDelete{
+        connection: conn,
+        start_column: s_col,
+        start_row: s_row,
+        end_column: e_col,
+        end_row: e_row,
+    }
+}
+
+fn get_hub(conn: GoogleSheetsConnection) -> sheets4::Sheets<hyper::client::Client,yup_oauth2::Authenticator<yup_oauth2::DefaultAuthenticatorDelegate, yup_oauth2::DiskTokenStorage, hyper::client::Client>> {
+	let sheet_id = conn.sheet_id;
+    let secret = read_client_secret(conn.credentials_file.unwrap());
+	let client = hyper::Client::with_connector(
+        HttpsConnector::new(NativeTlsClient::new().unwrap()));
+	
+	let authenticator = Authenticator::new(&secret,
+		DefaultAuthenticatorDelegate,
+		client,
+		DiskTokenStorage::new(&"token_store.json".to_string())
+			.unwrap(),
+		Some(FlowType::InstalledInteractive));
+
+	let client = hyper::Client::with_connector(
+		HttpsConnector::new(NativeTlsClient::new().unwrap()));
+	
+	//return the authenticated "hub"
+	Sheets::new(client, authenticator)
+}
+
 
 //gsc_reader returns an array of data based on the sheet, tab, and range provided.  Use 0 for endRow to return all rows
 pub fn gsc_reader(mut read_data: GoogleSheetsRead) -> Vec<Vec<String>> {
@@ -496,7 +555,8 @@ fn int_to_char_string(i: i32) -> String {
 
 // calc_range_from_vec_vec takes a vector of vector of strings and returns the number of rows and columns (as a tuple)
 pub fn calc_range_from_vec_vec(range: &[Vec<String>]) -> (i32, i32) {
-	(range.len() as i32, range[0].len() as i32)
+	//(rows, cols)
+    (range.len() as i32, range[0].len() as i32)
 }
 
 
