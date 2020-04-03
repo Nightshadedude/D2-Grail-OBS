@@ -56,13 +56,12 @@ pub struct GoogleSheetsRead {
 	start_column: Option<i32>,	//start data read at this column
 	start_row: Option<i32>,		//start data read at this row
 	end_column: Option<i32>,		// stop reading data at this column
-	end_row: Option<i32>,		// stop reading data at this row
-}
+	end_row: Option<i32>,		// stop r&write_data.value_option}
 
 pub struct GoogleSheetsWrite {
 	connection: GoogleSheetsConnection,	//connection info
 	write_data: sheets4::ValueRange,	//data that will be written
-	value_option: Option<ValueOption>,  //value option type...RAW or USER_ENTERED - TODO: Change to enum?
+	value_option: Option<ValueOption>,  //value option type-RAW or USER_ENTERED
 }
 
 
@@ -223,7 +222,12 @@ pub fn get_delete(conn: GoogleSheetsConnection,
     }
 }
 
-fn get_hub(conn: GoogleSheetsConnection) -> sheets4::Sheets<hyper::client::Client,yup_oauth2::Authenticator<yup_oauth2::DefaultAuthenticatorDelegate, yup_oauth2::DiskTokenStorage, hyper::client::Client>> {
+fn get_hub(conn: GoogleSheetsConnection) -> sheets4::Sheets<
+    hyper::client::Client,
+    yup_oauth2::Authenticator<
+        yup_oauth2::DefaultAuthenticatorDelegate,
+        yup_oauth2::DiskTokenStorage,
+        hyper::client::Client>> {
 	let sheet_id = conn.sheet_id;
     let secret = read_client_secret(conn.credentials_file.unwrap());
 	let client = hyper::Client::with_connector(
@@ -245,124 +249,44 @@ fn get_hub(conn: GoogleSheetsConnection) -> sheets4::Sheets<hyper::client::Clien
 
 
 //gsc_reader returns an array of data based on the sheet, tab, and range provided.  Use 0 for endRow to return all rows
-pub fn gsc_reader(mut read_data: GoogleSheetsRead) -> Vec<Vec<String>> {
-	let sheet_id = &read_data.connection.sheet_id;
-    let mut read_range = &mut read_data.connection.tab_name;
-    read_range.push_str("!");
-    read_range.push_str(&int_to_char_string(read_data.start_column));
-    let start_row = read_data.start_row.to_string();
-    read_range.push_str(&start_row);
-    read_range.push_str(":");
-    read_range.push_str(&int_to_char_string(read_data.end_column));
-    match read_data.end_row {
-        0 => (),
-        _ => {
-            let end_row = read_data.end_row.to_string();
-            read_range.push_str(&end_row);
-        }
-    }
+pub fn gsc_reader(read_data: GoogleSheetsRead) -> Vec<Vec<String>> {
+    let read_range = to_a1_notation(&read_data.connection.tab_name.unwrap(),
+        read_data.start_column,
+        read_data.start_row,
+        read_data.end_column,
+        read_data.end_row);
     println!("Read Range: {}", read_range);
 
+    let hub = get_hub(read_data.connection);
 
-	let secret = read_client_secret(read_data.connection.credentials_file);
-
-	let client = hyper::Client::with_connector(
-        HttpsConnector::new(NativeTlsClient::new().unwrap()));
-	
-	let authenticator = Authenticator::new(&secret,
-		DefaultAuthenticatorDelegate,
-		client,
-		DiskTokenStorage::new(&"token_store.json".to_string())
-			.unwrap(),
-		Some(FlowType::InstalledInteractive));
-
-	let client = hyper::Client::with_connector(
-		HttpsConnector::new(NativeTlsClient::new().unwrap()));
-	
-	//return the authenticated "hub"
-    let hub = Sheets::new(client, authenticator);
-
-
-    //result retuns (Response, ValueRange) tuple
-    let result = hub.spreadsheets().values_get(&sheet_id, &read_range)
+    let result = hub.spreadsheets().values_get(&read_data.connection.sheet_id.unwrap(), &read_range)
                 .major_dimension("ROWS")
                 .doit();
 
-    //handle errors
     match result {
-        Err(e) => match e {
-            // The Error enum provides details about what exactly happened.
-            // You can also just use its `Debug`, `Display` or `Error` traits
-             Error::HttpError(_)
-            |Error::MissingAPIKey
-            |Error::MissingToken(_)
-            |Error::Cancelled
-            |Error::UploadSizeLimitExceeded(_, _)
-            |Error::Failure(_)
-            |Error::BadRequest(_)
-            |Error::FieldClash(_)
-            |Error::JsonDecodeError(_, _) => {
-                println!("{} -- returning blank", e);
-                let vec_str =vec![String::from("")];
-                let vec_vec = vec![vec_str];
-                vec_vec
-            }
+        Err(e) => {
+            println!("{} -- returning blank", e);
+            let vec_str =vec![String::from("")];
+            let vec_vec = vec![vec_str];
+            vec_vec
         },
-        //Ok(res) effectively "unwraps" the ok option of res
-        //res.1 to access the ValueRange part of the tuple
-        //res.1.values to access the values option
-        //res.1.values.unwrap() to unwrap the actual values
-        //this is a Vec<Vec<String>> type,
-        //a vector of a vector of strings
         Ok(res) => res.1.values.unwrap(),
     }
 }
 
 //gsc_writer takes a sheet struct and writes it into the sheet. Returns true on success and false on failure.
-pub fn gsc_writer(mut write_data: GoogleSheetsWrite) -> bool{
-	let sheet_id = write_data.connection.sheet_id;
-    let mut write_range = &mut write_data.connection.tab_name;
-    write_range.push_str("!");
-    write_range.push_str(&int_to_char_string(write_data.start_column));
-    let start_row = write_data.start_row.to_string();
-    write_range.push_str(&start_row);
-	write_range.push_str(":");
-	let count = calc_range_from_vec_vec(&write_data.write_data.clone().unwrap());
-	let end_col = (write_data.start_column + count.1).to_string();
-	write_range.push_str(&end_col);
-	let end_row = (write_data.start_row + count.0).to_string();
-	write_range.push_str(&end_row);
+pub fn gsc_writer(write_data: GoogleSheetsWrite) -> /*TODO: Return type */{
+    let write_range = write_data.write_data.range.unwrap();
     println!("Write Range: {}", write_range);
-	//println!("Write Data: {:#?}", &write_data.write_data);
-
-	let secret = read_client_secret(write_data.connection.credentials_file);
-
-	let client = hyper::Client::with_connector(
-        HttpsConnector::new(NativeTlsClient::new().unwrap()));
+	let hub = get_hub(write_data.connection);
 	
-	let authenticator = Authenticator::new(&secret,
-		DefaultAuthenticatorDelegate,
-		client,
-		DiskTokenStorage::new(&"token_store.json".to_string())
-			.unwrap(),
-		Some(FlowType::InstalledInteractive));
-
-	let client = hyper::Client::with_connector(
-		HttpsConnector::new(NativeTlsClient::new().unwrap()));
-	
-	//return the authenticated "hub"
-	let hub = Sheets::new(client, authenticator);
-	
-	let req = sheets4::ValueRange{
-		range: Some(write_range.to_string()),
-		values: write_data.write_data,
-		major_dimension: Some("ROWS".to_string())
-	};
-
+	let req = write_data.write_data; 
 
 
     //result retuns (Response, ValueRange) tuple
-	let result = hub.spreadsheets().values_update(req, &sheet_id, &write_range)
+	let result = hub.spreadsheets().values_update(req,
+                &write_data.connection.sheet_id,
+                &write_range)
 				.value_input_option(&write_data.value_option)
                 //.major_dimension("ROWS")
 				.doit();
