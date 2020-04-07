@@ -10,7 +10,7 @@ use std::path::Path;
 //use std::env;
 //use google_sheets4::ValueRange;
 //use google_sheets4::{Result, Error};
-use google_sheets4::Sheets;
+//use sheets4::Sheets;
 pub use yup_oauth2::{FlowType,
     ApplicationSecret,
     read_application_secret};
@@ -21,7 +21,7 @@ use yup_oauth2::DiskTokenStorage;
 use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
 
-enum ValueOption {
+pub enum ValueOption {
     Raw, //RAW
     UserEntered, //USER_ENTERED
 }
@@ -42,14 +42,16 @@ pub struct GoogleSheetsConnection {
 	credentials_file: Option<String>,	//file that has the connection json
 }
 
+/*
 impl GoogleSheetsConnection {
     fn id_valid(&self) -> bool {
-        match (self.sheet_id, self.tab_name, self.credentials_file) {
+        match (*self.sheet_id, *self.tab_name, *self.credentials_file) {
             (Some(_), Some(_), Some(_)) => true,
             _ => false,
         }
     }
 }
+*/
 
 pub struct GoogleSheetsRead {
 	connection: GoogleSheetsConnection,	//connection info
@@ -57,6 +59,7 @@ pub struct GoogleSheetsRead {
 	start_row: Option<i32>,		//start data read at this row
 	end_column: Option<i32>,		// stop reading data at this column
 	end_row: Option<i32>,		// stop r&write_data.value_option}
+}
 
 pub struct GoogleSheetsWrite {
 	connection: GoogleSheetsConnection,	//connection info
@@ -76,8 +79,8 @@ pub struct GoogleSheetsDelete {
 
 
 // reads the provided example client secret, the quick and dirty way.
-fn read_client_secret(file: String) -> ApplicationSecret {
-    read_application_secret(Path::new(&file)).unwrap()
+fn read_client_secret(file: String) -> yup_oauth2::ApplicationSecret {
+    yup_oauth2::read_application_secret(Path::new(&file)).unwrap()
 }
 
 
@@ -167,8 +170,10 @@ pub fn get_write(conn: GoogleSheetsConnection,
         0 => None,
         _ => Some(start_row+num_row),
     };
-    
-    let write_range = to_a1_notation(&conn.tab_name.unwrap(),
+   
+    let conn_tab  = &conn.tab_name.unwrap();
+    let tab = &conn_tab;
+    let write_range = to_a1_notation(tab,
         s_col,
         s_row,
         e_col,
@@ -231,20 +236,20 @@ fn get_hub(conn: GoogleSheetsConnection) -> sheets4::Sheets<
 	let sheet_id = conn.sheet_id;
     let secret = read_client_secret(conn.credentials_file.unwrap());
 	let client = hyper::Client::with_connector(
-        HttpsConnector::new(NativeTlsClient::new().unwrap()));
+        hyper::net::HttpsConnector::new(hyper_native_tls::NativeTlsClient::new().unwrap()));
 	
 	let authenticator = Authenticator::new(&secret,
-		DefaultAuthenticatorDelegate,
+		yup_oauth2::DefaultAuthenticatorDelegate,
 		client,
-		DiskTokenStorage::new(&"token_store.json".to_string())
+		yup_oauth2::DiskTokenStorage::new(&"token_store.json".to_string())
 			.unwrap(),
 		Some(FlowType::InstalledInteractive));
 
 	let client = hyper::Client::with_connector(
-		HttpsConnector::new(NativeTlsClient::new().unwrap()));
+		hyper::net::HttpsConnector::new(hyper_native_tls::NativeTlsClient::new().unwrap()));
 	
 	//return the authenticated "hub"
-	Sheets::new(client, authenticator)
+	sheets4::Sheets::new(client, authenticator)
 }
 
 
@@ -275,25 +280,23 @@ pub fn gsc_reader(read_data: GoogleSheetsRead) -> Vec<Vec<String>> {
 }
 
 //gsc_writer takes a sheet struct and writes it into the sheet. Returns true on success and false on failure.
-pub fn gsc_writer(write_data: GoogleSheetsWrite) -> /*TODO: Return type */{
+pub fn gsc_writer(write_data: GoogleSheetsWrite) /*TODO: Return type */{
     let write_range = write_data.write_data.range.unwrap();
     println!("Write Range: {}", write_range);
-	let hub = get_hub(write_data.connection);
+    let hub = get_hub(write_data.connection);
 	
 	let req = write_data.write_data; 
 
 
     //result retuns (Response, ValueRange) tuple
 	let result = hub.spreadsheets().values_update(req,
-                &write_data.connection.sheet_id,
+                &write_data.connection.sheet_id.unwrap(),
                 &write_range)
-				.value_input_option(&write_data.value_option)
+				.value_input_option(&write_data.value_option.unwrap().to_string())
                 //.major_dimension("ROWS")
 				.doit();
 	
 	println!("Result: {:#?}", &result);
-
-	true
 }
 
 
@@ -501,7 +504,7 @@ pub fn to_a1_notation(tab: &str, start_column: Option<i32>,
 				a1_notation.push_str(&int_to_char_string(e_col));
 				a1_notation
 			},
-		(Some(s_col), Some(s_row), Some(e_col), Some(e_)) => {
+		(Some(s_col), Some(s_row), Some(e_col), Some(e_row)) => {
 				a1_notation.push_str("!");
 				a1_notation.push_str(&int_to_char_string(s_col));
 				a1_notation.push_str(&s_row.to_string());
