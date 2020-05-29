@@ -27,6 +27,10 @@ jobs:
         && echo "CREDENTIALS_FILE_NAME=${{ secrets.CREDENTIALS_FILE_NAME }}" | tee -a d2_grail_obs.env
         && echo "GOOGLE_SHEET_URL=${{ secrets.GOOGLE_SHEET_URL }}" | tee -a d2_grail_obs.env
         && echo "TAB_NAME_TEST=${{ secrets.TAB_NAME_TEST}}" | tee -a d2_grail_obs.env
+    - name: Create File (token_store.json)
+      run: >
+        touch token_store.json
+        && echo "{{ secrets.TOKEN_STORE }}" | tee -a token_store.json
     - name: Run tests
       run: cargo test --verbose
     - name: Run
