@@ -30,7 +30,7 @@ jobs:
     - name: Create File (token_store.json)
       run: >
         touch token_store.json
-        && echo "{{ secrets.TOKEN_STORE }}" | tee -a token_store.json
+        && echo -e "{{ secrets.TOKEN_STORE }}" | tee -a token_store.json
     - name: Run tests
       run: cargo test --verbose
     - name: Run
