@@ -1,5 +1,6 @@
 //Environment Variables which may contain keys
 d2-grail-obs.env
+d2_grail_obs.env
 
 //credential file for google sheets
 cred.json
@@ -9,4 +10,4 @@ token_store.json
 token*.json
 
 //executable
-main
+target/*

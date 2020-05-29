@@ -80,20 +80,6 @@ version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "d2_grail_obs"
-version = "0.1.0"
-dependencies = [
- "dotenv 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "google-sheets4 1.0.12+20190625 (registry+https://github.com/rust-lang/crates.io-index)",
- "hyper 0.10.16 (registry+https://github.com/rust-lang/crates.io-index)",
- "hyper-native-tls 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hyper-rustls 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.48 (registry+https://github.com/rust-lang/crates.io-index)",
- "yup-oauth2 1.0.12 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "dotenv"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -535,6 +521,20 @@ dependencies = [
  "redox_syscall 0.1.56 (registry+https://github.com/rust-lang/crates.io-index)",
  "remove_dir_all 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "test"
+version = "0.1.0"
+dependencies = [
+ "dotenv 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "google-sheets4 1.0.12+20190625 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hyper 0.10.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hyper-native-tls 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hyper-rustls 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.48 (registry+https://github.com/rust-lang/crates.io-index)",
+ "yup-oauth2 1.0.12 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
