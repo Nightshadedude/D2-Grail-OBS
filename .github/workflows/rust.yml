@@ -30,7 +30,7 @@ jobs:
     - name: Create File (token_store.json)
       run: >
         touch token_store.json
-        && echo -e "${{ secrets.TOKEN_STORE }}" | tee -a token_store.json
+        && echo -e "{\"tokens\":[{\"hash\":${{ secrets.DRIVE_READ_HASH }},\"scopes\":[\"https://www.googleapis.com/auth/drive.readonly\"],\"token\":{\"access_token\":\"${{ secrets.DRIVE_READ_ACCESS_TOKEN }}\",\"refresh_token\":\"${{ secrets.DRIVE_READ_REFRESH_TOKEN }}\"\"token_type\":\"Bearer\",\"expires_in\":null,\"expires_in_timestamp\":${{ secrets.DRIVE_READ_TIMESTAMP }}}},{\"hash\":${{ secrets.DRIVE_HASH }},\"scopes\":[\"https://www.googleapis.com/auth/drive\"],\"token\":{\"access_token\":\"${{ secrets.DRIVE_ACCESS_TOKEN }}\",\"refresh_token\":\"${{ secrets.DRIVE_REFRESH_TOKEN }}\"\"token_type\":\"Bearer\",\"expires_in\":null,\"expires_in_timestamP\":${{ secrets.DRIVE_TIMESTAMP }}}}]}" | tee -a token_store.json
     - name: Run tests
       run: cargo test --verbose
     - name: Run
