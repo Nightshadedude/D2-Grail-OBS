@@ -1,0 +1,37 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Create File (cred)
+      #uses: finnp/create-file-action@1.0.0
+      #env:
+      #FILE_NAME: "cred.json"
+      #FILE_DATA: >
+      run: >
+        touch cred.json
+        && echo -e "{\"installed\": {\"client_id\": \"${{ secrets.CLIENT_ID }}\",\"project_id\": \"${{ secrets.PROJECT_ID }}\",\"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",\"token_uri\": \"https://oauth2.googleapis.com/token\",\"auth_provider_x509_cert_url\": \"https://www.googleapis.com/oauth2/v1/certs\",\"client_secret\": \"${{ secrets.CLIENT_SECRET }}\",\"redirect_uris\": [\"urn:ietf:wg:oauth:2.0:oob\",\"http://localhost\"]}}" | tee -a cred.json
+    - name: Create File (d2_grail_obs)
+      run: >
+        touch d2_grail_obs.env
+        && echo "CREDENTIALS_FILE_NAME=${{ secrets.CREDENTIALS_FILE_NAME }}" | tee -a d2_grail_obs.env
+        && echo "GOOGLE_SHEET_URL=${{ secrets.GOOGLE_SHEET_URL }}" | tee -a d2_grail_obs.env
+        && echo "TAB_NAME_TEST=${{ secrets.TAB_NAME_TEST}}" | tee -a d2_grail_obs.env
+    - name: Create File (token_store.json)
+      run: >
+        touch token_store.json
+        && echo -e "{\"tokens\":[{\"hash\":${{ secrets.DRIVE_READ_HASH }},\"scopes\":[\"https://www.googleapis.com/auth/drive.readonly\"],\"token\":{\"access_token\":\"${{ secrets.DRIVE_READ_ACCESS_TOKEN }}\",\"refresh_token\":\"${{ secrets.DRIVE_READ_REFRESH_TOKEN }}\"\"token_type\":\"Bearer\",\"expires_in\":null,\"expires_in_timestamp\":${{ secrets.DRIVE_READ_TIMESTAMP }}}},{\"hash\":${{ secrets.DRIVE_HASH }},\"scopes\":[\"https://www.googleapis.com/auth/drive\"],\"token\":{\"access_token\":\"${{ secrets.DRIVE_ACCESS_TOKEN }}\",\"refresh_token\":\"${{ secrets.DRIVE_REFRESH_TOKEN }}\"\"token_type\":\"Bearer\",\"expires_in\":null,\"expires_in_timestamp\":${{ secrets.DRIVE_TIMESTAMP }}}}]}" | tee -a token_store.json
+    - name: Run tests
+      run: cargo test --verbose
+    - name: Run
+      run: cargo run
