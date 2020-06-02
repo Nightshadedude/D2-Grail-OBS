@@ -216,7 +216,6 @@ pub struct Writer {
         >,
     >,
     sheet_id: String,
-    tab_name: Option<String>,
     data: sheets4::ValueRange,
     range: Option<String>,
     val_option: ValueOption,
@@ -271,10 +270,6 @@ impl Writer {
         Self {
             hub,
             sheet_id: String::from(sheet_id),
-            tab_name: match tab.len() {
-                _ => Some(String::from(tab)),
-                0 => None,
-            },
             data: value_range_new(&write_range.clone().unwrap(), data),
             range: write_range,
             val_option: val_opt,
@@ -313,7 +308,6 @@ pub struct Deleter {
         >,
     >,
     sheet_id: String,
-    tab_name: Option<String>,
     delete_request: sheets4::ClearValuesRequest,
     range: Option<String>,
 }
@@ -366,10 +360,6 @@ impl Deleter {
         Self {
             hub,
             sheet_id: String::from(sheet_id),
-            tab_name: match tab.len() {
-                0 => None,
-                _ => Some(String::from(tab)),
-            },
             delete_request: sheets4::ClearValuesRequest::default(),
             range: delete_range,
         }
@@ -421,20 +411,6 @@ fn row_col_size_from_vec_vec(data: &Vec<Vec<String>>) -> (i32, i32) {
     };
 
     (row, col)
-}
-
-pub fn new_value_range(rng: &str, vals: Vec<Vec<String>>) -> sheets4::ValueRange {
-    sheets4::ValueRange {
-        range: match rng.len() {
-            rlen if rlen > 0 => Some(String::from(rng)),
-            _ => None,
-        },
-        values: match vals.len() {
-            rlen if rlen > 0 => Some(vals),
-            _ => None,
-        },
-        major_dimension: Some(String::from("ROWS")),
-    }
 }
 
 fn get_string_between(full_str: &str, start: &str, end: &str) -> Option<String> {
