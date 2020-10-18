@@ -15,3 +15,7 @@ This will be a Grail helper that will grab item data from the game, add it to a 
 
 #### 2019-11-12
 -Project initialization
+
+#### 2020-10-18
+-Kind of working on this still
+-Lots of life and work things have happened
